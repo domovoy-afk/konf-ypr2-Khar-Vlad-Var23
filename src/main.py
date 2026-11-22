@@ -7,6 +7,7 @@ from dataclasses import asdict
 
 from apt_index import fetch_index
 from config import load_config
+from d2_graph import format_d2
 from graph import dependency_graph, format_graph, loading_order, read_test_graph
 
 
@@ -39,13 +40,18 @@ def build_graph(config):
 
 
 def main():
-    """Проверяет входные параметры и запускает анализ."""
+    """Проверяет входные параметры и выполняет выбранный режим."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("config", help="путь к файлу YAML")
     modes = parser.add_mutually_exclusive_group()
-    modes.add_argument("--config-only", action="store_true")
-    modes.add_argument("--direct", action="store_true")
-    modes.add_argument("--order", action="store_true")
+    modes.add_argument(
+        "--config-only", action="store_true", help="проверить YAML"
+    )
+    modes.add_argument(
+        "--direct", action="store_true", help="прямые зависимости Ubuntu"
+    )
+    modes.add_argument("--order", action="store_true", help="порядок загрузки")
+    modes.add_argument("--graph", action="store_true", help="список смежности")
     args = parser.parse_args()
     try:
         config = load_config(args.config)
@@ -57,8 +63,10 @@ def main():
             graph, depths = build_graph(config)
             if args.order:
                 print("\n".join(loading_order(graph)))
-            else:
+            elif args.graph:
                 print(format_graph(graph, depths))
+            else:
+                print(format_d2(graph))
     except (OSError, ValueError) as error:
         print(f"Ошибка: {error}", file=sys.stderr)
         return 1

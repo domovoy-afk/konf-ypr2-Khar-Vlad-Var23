@@ -55,6 +55,7 @@ class AptIndexTest(unittest.TestCase):
         }
         for name, archive in archives.items():
             with self.subTest(name=name):
-                with patch("apt_index.urlopen", return_value=io.BytesIO(archive)):
+                response = io.BytesIO(archive)
+                with patch("apt_index.urlopen", return_value=response):
                     result = fetch_index(f"https://example.org/{name}")
                 self.assertIn("example", result)

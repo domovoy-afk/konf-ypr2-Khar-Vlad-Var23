@@ -47,7 +47,7 @@ python -m unittest discover -s tests -v
 собственной строки считаются листьями. Комментарии начинаются с `#`.
 
 ```sh
-python src/main.py examples/test.yaml
+python src/main.py examples/test.yaml --graph
 python src/main.py examples/ubuntu.yaml --direct
 ```
 
@@ -107,3 +107,55 @@ hello`. `gcc-14-base` находится на глубине 3 и не воше�
 для этого графа нет. APT может подготовить список загрузок для такого
 набора, так как скачивание архивов и их установка выполняются отдельно.
 APT также разрешает версии, альтернативы и виртуальные пакеты.
+
+## Диаграммы D2
+
+В обычном режиме CLI печатает описание диаграммы D2. Стрелка идет от
+пакета к его зависимости. Исходный пакет выделен голубым. В трех
+примерах используется глубина 2 и отключен фильтр.
+
+| Пакет | Конфигурация | Исходник D2 | Граф |
+| --- | --- | --- | --- |
+| `hello` | [YAML](examples/ubuntu.yaml) | [D2](examples/diagrams/hello.d2) | [Просмотр][hello-d2] |
+| `xz-utils` | [YAML](examples/xz-utils.yaml) | [D2](examples/diagrams/xz-utils.d2) | [Просмотр][xz-d2] |
+| `zstd` | [YAML](examples/zstd.yaml) | [D2](examples/diagrams/zstd.d2) | [Просмотр][zstd-d2] |
+
+Для повторной генерации и отрисовки с установленным D2:
+
+```sh
+python src/main.py examples/ubuntu.yaml > hello.d2
+d2 hello.d2 hello.svg
+d2 examples/diagrams/xz-utils.d2 xz-utils.svg
+d2 examples/diagrams/zstd.d2 zstd.svg
+```
+
+### Сравнение с графами APT
+
+В той же среде Ubuntu Base команда `apt-cache dotty` строит граф в DOT.
+Параметр `GivenOnly` ограничивает развертывание заданным пакетом, чтобы
+сопоставить его прямые связи с первым уровнем D2.
+
+```sh
+for package in hello xz-utils zstd; do
+  apt-cache -o APT::Cache::GivenOnly=true dotty "$package"
+done
+```
+
+| Пакет | Общие прямые зависимости D2 и DOT | Дополнительные связи в DOT |
+| --- | --- | --- |
+| `hello` | `libc6` | `hello-traditional`, `hello-debhelper` |
+| `xz-utils` | `libc6`, `liblzma5` | `lzma`, `xz-lzma`, `lzip`, `manpages-de`, `manpages-fr` |
+| `zstd` | `libc6`, `libgcc-s1`, `liblz4-1`, `liblzma5`, `libstdc++6`, `zlib1g` | — |
+
+Штатный DOT показывает конфликты зелеными стрелками. В D2 попадают
+связи из `Depends` и `Pre-Depends`. На втором уровне D2 у `hello`
+видна связь `libc6 → libgcc-s1`, которая не раскрывается при
+`GivenOnly=true`. У `zstd` обе библиотеки достигаются на первом
+уровне, поэтому D2 показывает обе дуги цикла между ними.
+Команды описаны в справке Ubuntu
+[`apt-cache`](https://manpages.ubuntu.com/manpages/noble/man8/apt-cache.8.html)
+и [`apt-get`](https://manpages.ubuntu.com/manpages/noble/man8/apt-get.8.html).
+
+[hello-d2]: https://play.d2lang.com/?script=SsksSk0uyczPs1IoykzPKOHl4uUqMLBSUMpIzcnJV-LlKjC0UlDKyUxKNgNxjCCc9ORk3WJDkICBXnFJZU6qXlpmTo6VgpKyi5Oro5urEsQYBV07hQJDkBlglhEvF2AA&sketch=0&theme=0
+[xz-d2]: https://play.d2lang.com/?script=SsksSk0uyczPs1IoykzPKOHl4uUqMLBSUKqo0i0tycwpVuLlKjC0UlDKyUxKNgNxjCCcnKrcRFMQ3xjCT09O1i02BAkY6BWXVOak6qVl5uRYKSgpuzi5Orq5KkFMVtC1UygwhLOMQKaDWcYgo2GygAEA&sketch=0&theme=0
+[zstd-d2]: https://play.d2lang.com/?script=XI9BC4MgGIbvQf_hwx3DyFIDD4ONtf9R1prgtkgv69ePL-k77PY8L_qgo1snG93nbWB18zPmWZ4tlQG2hTiyPFuEAebdYDVKnWS2lgeBQ5MGv0m-uzz81St0lTzE0RbFntDY9m4QM1prgGFNSD70YcKpKkP8-ql8OO8NsNPt2l3uHUsPA36GRRDVRA2RJFJEGj9CN-qdWiLsNUSSSNE59bdhRR_bbwA=&sketch=0&theme=0

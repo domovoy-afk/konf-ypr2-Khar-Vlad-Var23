@@ -4,6 +4,7 @@ import gzip
 import io
 import lzma
 import re
+from http.client import HTTPException
 from urllib.parse import urlsplit
 from urllib.request import urlopen
 
@@ -85,5 +86,6 @@ def fetch_index(repository):
         with urlopen(url, timeout=TIMEOUT_SECONDS) as response:
             with io.TextIOWrapper(unpack(response, url), "utf-8") as lines:
                 return parse_index(lines)
-    except (OSError, EOFError, lzma.LZMAError) as error:
-        raise ValueError(f"не удалось прочитать индекс {url}: {error}") from error
+    except (OSError, EOFError, HTTPException, lzma.LZMAError) as error:
+        message = f"не удалось прочитать индекс {url}: {error}"
+        raise ValueError(message) from error

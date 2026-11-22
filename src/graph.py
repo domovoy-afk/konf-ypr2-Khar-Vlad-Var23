@@ -74,5 +74,6 @@ def loading_order(graph):
                 ready.append(parent)
     if len(order) != len(graph):
         blocked = ", ".join(name for name in graph if remaining[name])
-        raise ValueError(f"цикл мешает построить порядок для пакетов: {blocked}")
+        message = f"цикл мешает построить порядок для пакетов: {blocked}"
+        raise ValueError(message)
     return order
