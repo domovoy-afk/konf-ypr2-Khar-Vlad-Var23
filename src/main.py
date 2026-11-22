@@ -7,7 +7,7 @@ from dataclasses import asdict
 
 from apt_index import fetch_index
 from config import load_config
-from graph import dependency_graph, format_graph, read_test_graph
+from graph import dependency_graph, format_graph, loading_order, read_test_graph
 
 
 def show_config(config):
@@ -45,6 +45,7 @@ def main():
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument("--config-only", action="store_true")
     modes.add_argument("--direct", action="store_true")
+    modes.add_argument("--order", action="store_true")
     args = parser.parse_args()
     try:
         config = load_config(args.config)
@@ -53,7 +54,11 @@ def main():
         elif args.direct:
             show_direct(config)
         else:
-            print(format_graph(*build_graph(config)))
+            graph, depths = build_graph(config)
+            if args.order:
+                print("\n".join(loading_order(graph)))
+            else:
+                print(format_graph(graph, depths))
     except (OSError, ValueError) as error:
         print(f"Ошибка: {error}", file=sys.stderr)
         return 1

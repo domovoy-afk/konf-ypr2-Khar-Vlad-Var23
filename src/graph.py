@@ -54,3 +54,25 @@ def format_graph(graph, depths):
         f"{depths[package]} {package}: {' '.join(dependencies)}".rstrip()
         for package, dependencies in graph.items()
     )
+
+
+def loading_order(graph):
+    """Выполняет топологическую сортировку, начиная с зависимостей."""
+    remaining = {package: len(children) for package, children in graph.items()}
+    dependents = {package: [] for package in graph}
+    for package, children in graph.items():
+        for dependency in children:
+            dependents[dependency].append(package)
+    ready = deque(package for package in graph if not remaining[package])
+    order = []
+    while ready:
+        package = ready.popleft()
+        order.append(package)
+        for parent in dependents[package]:
+            remaining[parent] -= 1
+            if not remaining[parent]:
+                ready.append(parent)
+    if len(order) != len(graph):
+        blocked = ", ".join(name for name in graph if remaining[name])
+        raise ValueError(f"цикл мешает построить порядок для пакетов: {blocked}")
+    return order

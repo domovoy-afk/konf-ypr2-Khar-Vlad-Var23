@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from graph import dependency_graph, read_test_graph
+from graph import dependency_graph, loading_order, read_test_graph
 
 EXAMPLE = Path(__file__).resolve().parents[1] / "examples" / "graph.txt"
 
@@ -43,6 +43,23 @@ class GraphTest(unittest.TestCase):
     def test_unknown_root(self):
         with self.assertRaisesRegex(ValueError, "Z"):
             dependency_graph(self.packages, "Z", 3, "")
+
+    def test_order_diamond(self):
+        graph, _ = dependency_graph(self.packages, "A", 3, "")
+        self.assertEqual(loading_order(graph), ["E", "D", "B", "C", "A"])
+
+    def test_order_with_filter(self):
+        graph, _ = dependency_graph(self.packages, "A", 3, "D")
+        self.assertEqual(loading_order(graph), ["B", "C", "A"])
+
+    def test_order_isolated(self):
+        graph, _ = dependency_graph(self.packages, "H", 3, "")
+        self.assertEqual(loading_order(graph), ["H"])
+
+    def test_order_cycle(self):
+        graph, _ = dependency_graph(self.packages, "F", 3, "")
+        with self.assertRaisesRegex(ValueError, "F, G"):
+            loading_order(graph)
 
     def test_malformed_input(self):
         with tempfile.TemporaryDirectory() as temporary:
