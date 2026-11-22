@@ -1,0 +1,5 @@
+package: A
+repository: graph.txt
+test_mode: true
+max_depth: 3
+exclude_substring: ""
